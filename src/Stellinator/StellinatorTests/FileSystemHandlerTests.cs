@@ -123,7 +123,7 @@ namespace StellinatorTests
             var actual = fileSystem.GetFiles(testFolder);
 
             // assert
-            Assert.Equal(expected, actual);
+            Assert.Equal(expected.OrderBy(e => e), actual.OrderBy(a => a));
         }
 
         [Fact]
@@ -140,7 +140,7 @@ namespace StellinatorTests
             var actual = fileSystem.GetSubdirectories(testFolder);
 
             // assert
-            Assert.Equal(expected, actual);
+            Assert.Equal(expected.OrderBy(e => e), actual.OrderBy(a => a));
         }
 
         public void Dispose()

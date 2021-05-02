@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the repository root for license information.
 
 using System;
+using System.IO;
 
 namespace Stellinator.Interfaces
 {
@@ -10,6 +11,11 @@ namespace Stellinator.Interfaces
     /// </summary>
     public class AstroFile
     {
+        /// <summary>
+        /// Source path.
+        /// </summary>
+        private string sourcePath;
+
         /// <summary>
         /// Gets or sets the observation value.
         /// </summary>
@@ -33,7 +39,32 @@ namespace Stellinator.Interfaces
         /// <summary>
         /// Gets or sets the source path of the file.
         /// </summary>
-        public string SourcePath { get; set; }
+        public string SourcePath
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(sourcePath))
+                {
+                    string date;
+
+                    try
+                    {
+                        date = ObservationDate.ToString("yyyy-MM-dd");
+                    }
+                    catch
+                    {
+                        date = "nodate";
+                    }
+
+                    return $"{Observation}|{date}|{Capture}|{FileName}.{FileExtension}"
+                        .Replace('|', Path.DirectorySeparatorChar);
+                }
+
+                return sourcePath;
+            }
+
+            set => sourcePath = value;
+        }
 
         /// <summary>
         /// Gets or sets the target path of the file.
@@ -81,6 +112,22 @@ namespace Stellinator.Interfaces
         /// Gets or sets a value indicating whether the file is a valid Stellina artifact.
         /// </summary>
         public bool Valid { get; set; }
+
+        /// <summary>
+        /// Equality implementation.
+        /// </summary>
+        /// <param name="obj">The object to compare to.</param>
+        /// <returns>A value indicating whether the object is an <see cref="AstroFile"/> with the same source path.</returns>
+        public override bool Equals(object obj) =>
+            obj is AstroFile astroFile &&
+            astroFile.SourcePath == SourcePath;
+
+        /// <summary>
+        /// Gets the hash code.
+        /// </summary>
+        /// <returns>The hash code of the source path.</returns>
+        public override int GetHashCode() =>
+            SourcePath.GetHashCode();
 
         /// <summary>
         /// Gets the string representation.
