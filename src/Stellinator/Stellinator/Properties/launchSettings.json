@@ -2,7 +2,7 @@
   "profiles": {
     "Stellinator": {
       "commandName": "Project",
-      "commandLineArgs": "f:\\stellina-3398a2\\283\\2021-04-27_06-16-24-observation-moon\\06-18-26-capture-initial e:\\astro\\raw\\moon"
+      "commandLineArgs": "-s f:\\ e:\\test"
     }
   }
 }

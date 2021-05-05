@@ -6,11 +6,11 @@ using Xunit;
 
 namespace StellinatorTests
 {
-    public class FilterWorkflowTests
+    public class FilterWorkflowTests : IClassFixture<WriterSinkFixture>
     {
         private readonly IWorkflow filterWorkflow;
 
-        public FilterWorkflowTests()
+        public FilterWorkflowTests(WriterSinkFixture _)
         {
             filterWorkflow = new FilterWorkflow();
         }

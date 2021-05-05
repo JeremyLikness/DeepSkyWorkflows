@@ -7,8 +7,13 @@ using Xunit;
 
 namespace StellinatorTests
 {
-    public class StellinatorOptionsTests
+    public class StellinatorOptionsTests : IClassFixture<WriterSinkFixture>
     {
+        public StellinatorOptionsTests(WriterSinkFixture _)
+        {
+
+        }
+
         public static IEnumerable<object[]> ConfigurationMatrix()
         {
             var recurse = new[] { true, false };

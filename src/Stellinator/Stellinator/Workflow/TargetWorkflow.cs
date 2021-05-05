@@ -41,7 +41,7 @@ namespace Stellinator.Workflow
 
             Action<string> log = options.QuietMode ?
                 msg => { }
-            : Console.WriteLine;
+            : WorkflowWriter.WriteLine;
 
             foreach (var observation in observations)
             {
@@ -51,10 +51,10 @@ namespace Stellinator.Workflow
                 var dates = files.Where(f => f.Observation == observation)
                     .Select(f => f.ObservationDate).Distinct();
 
-                directoryName = observation;
-
                 foreach (var date in dates)
                 {
+                    directoryName = observation;
+
                     if (options.GroupStrategy != GroupStrategy.Observation)
                     {
                         var dateStr = date.ToString("yyyy-MM-dd");
@@ -157,12 +157,7 @@ namespace Stellinator.Workflow
                 }
             }
 
-            Console.WriteLine("Finishing assigning files.");
-
-            foreach (var file in files.OrderBy(f => f.TargetPath))
-            {
-                Console.WriteLine($"{file.SourcePath} => {file.TargetPath}");
-            }
+            WorkflowWriter.WriteLine("Finishing assigning files.");
 
             return files;
         }

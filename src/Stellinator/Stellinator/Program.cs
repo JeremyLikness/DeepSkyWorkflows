@@ -43,7 +43,7 @@ namespace Stellinator
                 h.AddEnumValuesToHelpText = true;
                 return HelpText.DefaultParsingErrorsHandler(result, h);
             }, e => e);
-            Console.WriteLine(helpText);
+            WorkflowWriter.WriteLine(helpText);
         }
 
         /// <summary>
@@ -52,25 +52,27 @@ namespace Stellinator
         /// <param name="options">The parsed options.</param>
         private static void ProcessFiles(Options options)
         {
-            Console.WriteLine(options.ToString());
+            WorkflowWriter.WriteLine(options.ToString());
             IFileSystem fileSystem = new FileSystemHandler();
             IWorkflow parse = new ParseWorkflow(fileSystem);
             IWorkflow validation = new ValidateWorkflow(fileSystem);
             IWorkflow filterWorkflow = new FilterWorkflow();
             IWorkflow process = new ProcessWorkflow(filterWorkflow);
             IWorkflow target = new TargetWorkflow();
+            IWorkflow copy = new CopyWorkflow(fileSystem);
             IWorkflow mainworkflow = new MainWorkflow(
                 parse,
                 validation,
                 process,
-                target);
+                target,
+                copy);
             try
             {
                 var result = mainworkflow.Process(options, Array.Empty<AstroFile>());
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error encountered: {ex.Message}.");
+                WorkflowWriter.WriteLine($"Error encountered: {ex.Message}.");
             }
 
             return;

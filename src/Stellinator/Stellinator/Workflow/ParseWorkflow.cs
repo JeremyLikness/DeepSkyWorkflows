@@ -33,7 +33,7 @@ namespace Stellinator.Workflow
         /// <returns>The processed files.</returns>
         public AstroFile[] Process(Options options, AstroFile[] files)
         {
-            Console.WriteLine($"Processing input files starting at '{options.SourceDirectory}'.");
+            WorkflowWriter.WriteLine($"Processing input files starting at '{options.SourceDirectory}'.");
 
             if (!fileSystem.DirectoryExists(options.SourceDirectory))
             {
@@ -44,7 +44,7 @@ namespace Stellinator.Workflow
                 RecurseSubdirectories(options.SourceDirectory, options.QuietMode) :
                 new[] { options.SourceDirectory };
 
-            Console.WriteLine("Processing files...");
+            WorkflowWriter.WriteLine("Processing files...");
 
             var allFiles = directoriesToParse.SelectMany(d => fileSystem.GetFiles(d))
                 .Where(f => f.Contains("stellina"))
@@ -53,7 +53,7 @@ namespace Stellinator.Workflow
             var stellina = allFiles.Count(a => a.Valid);
             var processed = allFiles.Count(a => a.IsProcessed);
 
-            Console.WriteLine($"Parsed {allFiles.Length} files: {stellina} are Stellina files, {processed} are processed (jpg, tif)" +
+            WorkflowWriter.WriteLine($"Parsed {allFiles.Length} files: {stellina} are Stellina files, {processed} are processed (jpg, tif)" +
                 $" files.");
 
             return allFiles;
@@ -123,7 +123,7 @@ namespace Stellinator.Workflow
 
                 if (!quietMode)
                 {
-                    Console.WriteLine($"Visiting directory '{dir}'.");
+                    WorkflowWriter.WriteLine($"Visiting directory '{dir}'.");
                 }
 
                 directoryList.Add(dir);
@@ -138,7 +138,7 @@ namespace Stellinator.Workflow
             }
             while (directoryStack.Count > 0);
 
-            Console.WriteLine($"Parsed {directoryList.Count} items.");
+            WorkflowWriter.WriteLine($"Parsed {directoryList.Count} items.");
             return directoryList.ToArray();
         }
     }

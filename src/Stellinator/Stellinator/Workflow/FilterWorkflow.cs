@@ -106,7 +106,7 @@ namespace Stellinator.Workflow
                 }
             }
 
-            Console.WriteLine($"Processed {counter} files: {accepted} accepted, {rejected} rejected, {filtered} filtered.");
+            WorkflowWriter.WriteLine($"Processed {counter} files: {accepted} accepted, {rejected} rejected, {filtered} filtered.");
 
             return files;
         }

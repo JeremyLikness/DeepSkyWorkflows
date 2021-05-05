@@ -7,7 +7,7 @@ using Xunit;
 
 namespace StellinatorTests
 {
-    public sealed class FileSystemHandlerTests : IDisposable
+    public sealed class FileSystemHandlerTests : IDisposable, IClassFixture<WriterSinkFixture>
     {
         private readonly string tempFolder;
         private readonly string testFolder;
@@ -17,7 +17,7 @@ namespace StellinatorTests
         private const string TEST_FILE = "test.txt";
         private const string TEST_FILE2 = "test2.txt";
 
-        public FileSystemHandlerTests()
+        public FileSystemHandlerTests(WriterSinkFixture _)
         {
             var testId = Guid.NewGuid().ToString();
             tempFolder = Path.GetTempPath();

@@ -34,7 +34,7 @@ namespace Stellinator.Workflow
                 .Select(f => f.Observation).Distinct();
 
             Action<string> log = options.QuietMode ?
-                msg => { } : Console.WriteLine;
+                msg => { } : WorkflowWriter.WriteLine;
 
             foreach (var group in groups)
             {

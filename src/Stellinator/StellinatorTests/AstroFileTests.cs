@@ -6,8 +6,13 @@ using Xunit;
 
 namespace StellinatorTests
 {
-    public class AstroFileTests
+    public class AstroFileTests : IClassFixture<WriterSinkFixture>
     {
+        public AstroFileTests(WriterSinkFixture _)
+        {
+
+        }
+
         private const string SOURCE_PATH = @"E:\at\at\joes";
         private const string NONEWFILENAME = "nonewfilename";
         private const string NOTARGETPATH = "notargetpath";
