@@ -53,6 +53,7 @@ namespace Stellinator.Workflow
 
                     foreach (var capture in captures)
                     {
+                        log($"\t\tCapture: {capture}");
                         var filesToProcess = files.Where(f => f.Observation == group
                             && f.ObservationDate == date
                             && f.Capture == capture)

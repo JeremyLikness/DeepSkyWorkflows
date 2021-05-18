@@ -23,6 +23,7 @@ namespace Stellinator.Workflow
         {
             var ds = System.IO.Path.DirectorySeparatorChar;
             var directoryName = string.Empty;
+            var rootDirectory = string.Empty;
             var fileName = string.Empty;
             var imageIndex = 1;
             var rejectedIndex = 1;
@@ -47,18 +48,20 @@ namespace Stellinator.Workflow
             {
                 imageIndex = rejectedIndex = 1;
                 fileName = genFileName();
+                directoryName = rootDirectory = observation;
 
                 var dates = files.Where(f => f.Observation == observation)
                     .Select(f => f.ObservationDate).Distinct();
 
                 foreach (var date in dates)
                 {
-                    directoryName = observation;
+                    directoryName = rootDirectory;
 
                     if (options.GroupStrategy != GroupStrategy.Observation)
                     {
                         var dateStr = date.ToString("yyyy-MM-dd");
                         directoryName = $"{directoryName}{ds}{dateStr}";
+                        rootDirectory = directoryName;
                     }
 
                     if (options.GroupStrategy == GroupStrategy.Date)
@@ -73,6 +76,8 @@ namespace Stellinator.Workflow
 
                     foreach (var capture in captures)
                     {
+                        directoryName = rootDirectory;
+
                         if (options.GroupStrategy == GroupStrategy.Capture)
                         {
                             imageIndex = rejectedIndex = 1;
@@ -97,15 +102,13 @@ namespace Stellinator.Workflow
                                 if (file.Rejected)
                                 {
                                     subdir = "Rejected";
-                                    var seq = string.Format("{0:0000}", rejectedIndex.ToString());
+                                    var seq = string.Format("{0:0000}", rejectedIndex);
                                     rejectedIndex++;
                                     file.NewFileName = $"{file.FileName}-{seq}";
                                 }
                                 else
                                 {
-                                    var newFileName = genFileName();
-
-                                    if (newFileName == null)
+                                    if (fileName == null)
                                     {
                                         file.NewFileName = file.FileName;
                                     }
@@ -113,7 +116,7 @@ namespace Stellinator.Workflow
                                     {
                                         var seq = string.Format("{0:0000}", imageIndex);
                                         imageIndex++;
-                                        file.NewFileName = $"{newFileName}-{seq}";
+                                        file.NewFileName = $"{fileName}-{seq}";
                                     }
                                 }
                             }

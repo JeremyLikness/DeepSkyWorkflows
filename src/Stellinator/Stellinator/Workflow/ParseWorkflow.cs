@@ -90,8 +90,10 @@ namespace Stellinator.Workflow
             }
 
             result.Capture = parts[^2];
-            result.IsProcessed = processedExtensions.Contains(result.FileExtension) &&
-                result.FileName.Contains("-output");
+            result.IsProcessed = (
+                processedExtensions.Contains(result.FileExtension) &&
+                    result.FileName.Contains("-output")) ||
+                    result.FileExtension.StartsWith("tif");
             result.IsRaw = result.FileExtension == "fits";
             result.Valid = result.FileExtension == "fits" || processedExtensions.Contains(result.FileExtension);
 

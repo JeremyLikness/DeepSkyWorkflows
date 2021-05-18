@@ -86,7 +86,10 @@ namespace Stellinator.Interfaces
         /// to find a correlated FITS.
         /// </summary>
         public string FileNameMatch => IsProcessed ?
-            FileName : $"{FileName}-output";
+            FileName :
+            FileName.EndsWith('r') ?
+                $"{FileName.TrimEnd('r')}-output" :
+                $"{FileName}-output";
 
         /// <summary>
         /// Gets or sets the file extension without the period.
