@@ -31,10 +31,7 @@ namespace StellinatorTests
         // E:\
         // E:\TGT
 
-        public void CopyFile(string src, string tgt)
-        {
-        }
-
+        public void CopyFile(string src, string tgt) => CreateFile(tgt);        
         
         public void CreateDirectory(string path)
         {
@@ -45,7 +42,6 @@ namespace StellinatorTests
                 var dir = idx == 0 ? $"{parts[0]}" :
                     string.Join(@"\", parts.Take(idx + 1));
 
-                dir = Path.GetDirectoryName(dir) ?? dir;
                 dir = NormalizeDirectory(dir);
 
                 if (fileSystem.ContainsKey(dir) == false)
@@ -67,7 +63,8 @@ namespace StellinatorTests
 
         public void CreateFile(string path)
         {
-            var dir = Path.GetDirectoryName(path);
+            var dir = NormalizeDirectory(
+                Path.GetDirectoryName(path));
             CreateDirectory(dir);
             var file = new FileOrDirectory
             {
@@ -79,8 +76,7 @@ namespace StellinatorTests
 
         public bool DirectoryExists(string path)
         {
-            var dir = NormalizeDirectory(
-                Path.GetDirectoryName(path));
+            var dir = NormalizeDirectory(path);
             return fileSystem.ContainsKey(dir);
         }
 
@@ -91,7 +87,7 @@ namespace StellinatorTests
         
         public string[] GetFiles(string path)
         {
-            var dir = NormalizeDirectory(Path.GetDirectoryName(path));
+            var dir = NormalizeDirectory(path);
             if (fileSystem.ContainsKey(dir))
             {
                 return fileSystem[dir].Where(f => f.isDirectory == false)
@@ -103,7 +99,7 @@ namespace StellinatorTests
 
         public string[] GetSubdirectories(string path)
         {
-            var dir = NormalizeDirectory(Path.GetDirectoryName(path));
+            var dir = NormalizeDirectory(path);
             if (fileSystem.ContainsKey(dir))
             {
                 return fileSystem[dir].Where(f => f.isDirectory == true)

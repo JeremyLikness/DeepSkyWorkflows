@@ -80,3 +80,30 @@ IC443
             img-0004.tif
 ```
 
+## Options
+
+The following options are available with Stellinator.
+
+|Short|Long|Default|Description|
+|---|---|---|---|
+|`-d`|`--directory-only`|`false`|Only scans a single directory; does not recurse subdirectories.|
+|`-q`|`--quiet-mode`|`false`|Suppress verbose updates.|
+|`-s`|`--scan-only`|`false`|Scan only; show logic but do not copy files.|
+|`-i`|`--ignore`|`Nothing`|Choose to ignore files. Combine multiple options by separating them with a comma. Options are:<br>`Nothing`<br>`Rejection` will process rejected files as if they are accepted.<br>`Rejected` will ignore and not copy rejected files.<br>`Jpeg`<br>`Tiff`<br>`AllButLast` will only copy the most recent `.jpeg` and `.tif` from Stellina.|
+|`-g`|`--group-strategy`|`Date`|Choose how to group images together. Will create directories based on:<br>`Observation` folder per object<br>`Date` folder per object per date<br>`Capture` folder per capture|
+  -t, --target-filename-strategy    (Default: TicksHex) Choose the strategy to
+                                    rename target images. Valid values:
+                                    Original, New, Ticks, TicksHex
+
+  -n, --new-filename                Set the name of target files when using
+                                    target filename strategy 'New'.
+
+  --help                            Display this help screen.
+
+  --version                         Display version information.
+
+  SourceDirectory (pos. 0)          Required. The path to the Stellina USB drive
+                                    folder to scan.
+
+  TargetDirectory (pos. 1)          Required. The path to the root of the target
+                                    directory.

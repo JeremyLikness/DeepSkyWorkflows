@@ -161,7 +161,7 @@ namespace Stellinator.Configuration
         /// <returns>The list of configured options.</returns>
         public override string ToString()
         {
-            var location = GetType().Assembly.Location;
+            var location = Process.GetCurrentProcess().MainModule.FileName;
             var fileVersionInfo = FileVersionInfo.GetVersionInfo(location);
             var heading = $"{fileVersionInfo.ProductName} {fileVersionInfo.ProductVersion}";
             var copyright = fileVersionInfo.LegalCopyright;
