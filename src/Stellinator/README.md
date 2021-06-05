@@ -80,6 +80,11 @@ IC443
             img-0004-output.jpeg
             img-0004.tif
 ```
+## Getting started
+
+Check out our [releases](https://github.com/JeremyLikness/DeepSkyWorkflows/releases) to download the latest. 
+
+> **NOTE** be sure to run using the `-s` flag to see how your filesystem will be impacted without making changes!
 
 ## Options
 
