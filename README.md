@@ -9,4 +9,5 @@ Browse the photos I've taken in this [Google Astrophotography Album](https://pho
 ## Navigation
 
 - [Source Code](./src/README.md) for astrophotography-related projects
+- [Software Releases](https://github.com/JeremyLikness/DeepSkyWorkflows/releases) of tools and utilities
 - [PixelMath](./pixelmath/README.md) examples for use in PixInsight
