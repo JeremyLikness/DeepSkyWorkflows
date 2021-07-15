@@ -10,3 +10,4 @@ Browse the photos I've taken in this [Google Astrophotography Album](https://pho
 
 - [Source Code](./src/README.md) for astrophotography-related projects
 - [PixelMath](./pixelmath/README.md) examples for use in PixInsight
+- [Scripts])(./piscripts/README.md) custom workflow scripts
