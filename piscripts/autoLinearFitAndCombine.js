@@ -18,48 +18,16 @@ then use LRGB to combine them.
 
 #feature-id    DeepSkyWorkflows > AutoLinearFit
 
-#include <pjsr/StdButton.jsh>
-#include <pjsr/FrameStyle.jsh>
-#include <pjsr/TextAlign.jsh>
-#include <pjsr/NumericControl.jsh>
-
 #define TITLE "Auto Linear Fit"
 #define VERSION "0.1"
 
-// concatenate parts into a string
-function concatenateStr() {
-   let str = '';
-   for (var arg = 0; arg < arguments.length; ++arg) {
-      str += arguments[arg];
-   }
-   return str;
-}
+#include "deepSkyCommon.js"
 
-// write lines with title prefix
-function writeLines() {
-   for (var arg = 0; arg < arguments.length; ++arg) {
-      var val = arguments[arg];
-      if (arg === 0) {
-         console.writeln(concatenateStr('<b>', TITLE, '</b>: ', val));
-      }
-      else {
-         console.writeln(val);
-      }
-   }
-}
-
-// get a unique name that doesn't conflict with existing
-function getNewName(name, suffix)
-{
-   let viewName = name + suffix;
-   let n = 1;
-   while (!ImageWindow.windowById(viewName).isNull)
-   {
-      ++n;
-      viewName = name + suffix + n;
-   }
-   return viewName;
-}
+#include <pjsr/StdButton.jsh>
+#include <pjsr/DataType.jsh>
+#include <pjsr/FrameStyle.jsh>
+#include <pjsr/TextAlign.jsh>
+#include <pjsr/NumericControl.jsh>
 
 // separate the channels
 function separateChannels(executionState) {
@@ -99,10 +67,10 @@ function findMinOrMaxChannel(executionState) {
    }
 
    // base on maximum or minimum?
-   let maxOrMinFn = executionState.prefs.useMin ? Math.min : Math.max;
+   let maxOrMinFn = executionState.config.prefs.useMin ? Math.min : Math.max;
 
    writeLines(concatenateStr('R: ', medians[0], ' G: ', medians[1], ' B: ', medians[2]),
-      concatenateStr('Using ', executionState.prefs.useMin ? 'minimum' : 'maximum', ' median channel'));
+      concatenateStr('Using ', executionState.config.prefs.useMin ? 'minimum' : 'maximum', ' median channel'));
 
    // get minimum or maximum channel
    let tgtMedian = maxOrMinFn(medians[0], medians[1], medians[2]);
@@ -114,7 +82,7 @@ function findMinOrMaxChannel(executionState) {
    for (var i = 0; i < medians.length; i++) {
       if (tgtMedian == medians[i]) {
          tgtId = i;
-         adjusted.push(executionState.prefs.newInstance || false);
+         adjusted.push(executionState.config.prefs.newInstance || false);
          writeLines(concatenateStr('Selected channel: ', '<i>', executionState.channels[i][1], '</i>'));
       }
       else {
@@ -132,11 +100,11 @@ function linearFit(executionState) {
 
    // linear fit using reference channel
    let lf = new LinearFit;
-   lf.rejectLow = executionState.prefs.rejectLow;
-   lf.rejectHigh = executionState.prefs.rejectHigh;
+   lf.rejectLow = executionState.config.prefs.rejectLow;
+   lf.rejectHigh = executionState.config.prefs.rejectHigh;
 
-   writeLines(concatenateStr('Executing LinearFit with rejectLow: ', executionState.prefs.rejectLow,
-      ' rejectHigh: ', executionState.prefs.rejectHigh));
+   writeLines(concatenateStr('Executing LinearFit with rejectLow: ', executionState.config.prefs.rejectLow,
+      ' rejectHigh: ', executionState.config.prefs.rejectHigh));
 
    lf.referenceViewId = executionState.channels[executionState.tgtId][1];
    for (var i = 0; i < executionState.channelImgs.length; i++) {
@@ -148,13 +116,13 @@ function linearFit(executionState) {
 
 // use LRGB to recombine
 function lrgbCombine(executionState) {
-   writeLines(concatenateStr('Combining with lightness ', executionState.prefs.lightness,
-      ' and saturation ', executionState.prefs.saturation),
-      executionState.prefs.noiseReduction ? concatenateStr('Applying noise reduction: layersRemoved: ',
-         executionState.prefs.layersRemoved, ' layersProtected: ', executionState.prefs.layersProtected) :
+   writeLines(concatenateStr('Combining with lightness ', executionState.config.prefs.lightness,
+      ' and saturation ', executionState.config.prefs.saturation),
+      executionState.config.prefs.noiseReduction ? concatenateStr('Applying noise reduction: layersRemoved: ',
+         executionState.config.prefs.layersRemoved, ' layersProtected: ', executionState.config.prefs.layersProtected) :
          'No noise reduction');
 
-   console.writeln(executionState.prefs.clipHighlights ? 'Clipping highlights' : 'Not clipping highlights');
+   console.writeln(executionState.config.prefs.clipHighlights ? 'Clipping highlights' : 'Not clipping highlights');
 
    // set up combination
    var lrgb = new LRGBCombination;
@@ -166,14 +134,14 @@ function lrgbCombine(executionState) {
       [false, "", 1.00000]
    ];
 
-   lrgb.mL = executionState.prefs.lightness;
-   lrgb.mc = executionState.prefs.saturation;
-   lrgb.clipHighlights = executionState.prefs.clipHighlights;
-   lrgb.noiseReduction = executionState.prefs.noiseReduction;
-   lrgb.layersRemoved = executionState.prefs.layersRemoved;
-   lrgb.layersProtected = executionState.prefs.layersProtected;
+   lrgb.mL = executionState.config.prefs.lightness;
+   lrgb.mc = executionState.config.prefs.saturation;
+   lrgb.clipHighlights = executionState.config.prefs.clipHighlights;
+   lrgb.noiseReduction = executionState.config.prefs.noiseReduction;
+   lrgb.layersRemoved = executionState.config.prefs.layersRemoved;
+   lrgb.layersProtected = executionState.config.prefs.layersProtected;
 
-   if (executionState.prefs.newInstance) {
+   if (executionState.config.prefs.newInstance) {
       console.writeln('Combining to new instance');
       lrgb.executeGlobal();
    }
@@ -207,7 +175,7 @@ function doFit(executionState) {
 
    writeLines('Done');
 
-   if (executionState.prefs.newInstance === false) {
+   if (executionState.config.prefs.newInstance === false) {
       executionState.view.window.bringToFront();
    }
 }
@@ -233,6 +201,7 @@ function alfDialog(executionState)
       text = concatenateStr('<b>', TITLE, ' v', VERSION, '</b>');
    }
 
+
    // my copyright
    this.lblCopyright = new Label(this);
    this.lblCopyright.text = "© 2021, Jeremy Likness";
@@ -240,45 +209,13 @@ function alfDialog(executionState)
    // main settings
 
    // use minimum
-   this.useMinCheckbox = new CheckBox(this);
-	with (this.useMinCheckbox) {
-		toolTip = "Uses the channel with the minimum median as the source for LinearFit. Otherwise uses the max.";
-		text = "Use minimum channel";
-		enabled = true;
-		checked = executionState.prefs.useMin;
-		bindings = function() {
-			this.checked = dlg.execState.prefs.useMin;
-		}
-		onCheck = function (value) {
-			dlg.execState.prefs.useMin = value;
-		}
-	}
+   this.useMinCheckbox = createBoundCheckbox(this, 'useMin', executionState.config);
 
    // new instance
-   this.newInstanceCheckbox = new CheckBox(this);
-	with (this.newInstanceCheckbox) {
-		toolTip = "Creates a new image instead of applying the normalization to the target image.";
-		text = "Create new instance";
-		enabled = true;
-		checked = executionState.prefs.newInstance;
-		bindings = function() {
-			this.checked = dlg.execState.prefs.newInstance;
-		}
-		onCheck = function (value) {
-			dlg.execState.prefs.newInstance = value;
-		}
-	}
+   this.newInstanceCheckbox = new createBoundCheckbox(this, 'newInstance', executionState.config);
 
-   this.mainSettings = new GroupBox(this);
-	with (this.mainSettings) {
-		title = "Main settings";
-		sizer = new HorizontalSizer;
-      sizer.margin = 6;
-      sizer.spacing = 4;
-      sizer.add (dlg.useMinCheckbox);
-      sizer.addStretch();
-      sizer.add (dlg.newInstanceCheckbox);
-	}
+   this.mainSettings = createGroupBox(this, 'Main settings', dlg.useMinCheckbox,
+      null, dlg.newInstanceCheckbox);
 
    // linear fit settings
    this.rejectLowSlider = new NumericControl(this);
@@ -290,16 +227,16 @@ function alfDialog(executionState)
 		slider.scaledMinWidth = 60;
 		setPrecision(2);
 		edit.scaledMinWidth = 60;
-      setValue(dlg.execState.prefs.rejectLow);
+      setValue(dlg.execState.config.prefs.rejectLow);
       bindings = function() {
-			this.setValue(dlg.execState.prefs.rejectLow);
+			this.setValue(dlg.execState.config.prefs.rejectLow);
 		}
 		onValueUpdated = function (value) {
-         if (value >= 1.0 || value >= dlg.execState.prefs.rejectHigh) {
-            value = dlg.execState.prefs.rejectHigh * 0.9;
+         if (value >= 1.0 || value >= dlg.execState.config.prefs.rejectHigh) {
+            value = dlg.execState.config.prefs.rejectHigh * 0.9;
             dlg.rejectLowSlider.setValue(value);
          }
-			dlg.execState.prefs.rejectLow = value;
+			dlg.execState.config.prefs.rejectLow = value;
 		}
 		slider.onMousePress = function() {
 			dlg.isSliding = true;
@@ -308,6 +245,8 @@ function alfDialog(executionState)
 			dlg.isSliding = false;
 		}
 	}
+
+   bindResetToNumericControl(dlg.rejectLowSlider, 'rejectLow', dlg.execState.config);
 
    this.rejectHighSlider = new NumericControl(this);
 	with (this.rejectHighSlider) {
@@ -318,16 +257,16 @@ function alfDialog(executionState)
 		slider.scaledMinWidth = 60;
 		setPrecision(2);
 		edit.scaledMinWidth = 60;
-      setValue(dlg.execState.prefs.rejectHigh);
+      setValue(dlg.execState.config.prefs.rejectHigh);
 		bindings = function() {
-			this.setValue(dlg.execState.prefs.rejectHigh);
+			this.setValue(dlg.execState.config.prefs.rejectHigh);
 		}
 		onValueUpdated = function (value) {
-         if (value <= 0 || value <= dlg.execState.prefs.rejectLow) {
-            value = dlg.execState.prefs.rejectLow * 1.01;
+         if (value <= 0 || value <= dlg.execState.config.prefs.rejectLow) {
+            value = dlg.execState.config.prefs.rejectLow * 1.01;
             dlg.rejectHighSlider.setValue(value);
          }
-			dlg.execState.prefs.rejectHigh = value;
+			dlg.execState.config.prefs.rejectHigh = value;
 		}
 		slider.onMousePress = function() {
 			dlg.isSliding = true;
@@ -337,15 +276,10 @@ function alfDialog(executionState)
 		}
 	}
 
-   this.lFitSettings = new GroupBox(this);
-	with (this.lFitSettings) {
-		title = "Linear fit";
-		sizer = new VerticalSizer;
-      sizer.margin = 6;
-      sizer.spacing = 4;
-      sizer.add (dlg.rejectLowSlider);
-      sizer.add (dlg.rejectHighSlider);
-	}
+   bindResetToNumericControl(dlg.rejectHighSlider, 'rejectHigh', dlg.execState.config);
+
+   this.lFitSettings = createVerticalGroupBox(this, 'Linear fit', dlg.rejectLowSlider,
+      dlg.rejectHighSlider);
 
    // linear fit settings
    this.lightnessSlider = new NumericControl(this);
@@ -357,15 +291,15 @@ function alfDialog(executionState)
       slider.setRange(1, 100);
 		slider.scaledMinWidth = 60;
 		edit.scaledMinWidth = 60;
-      setValue(dlg.execState.prefs.lightness);
+      setValue(dlg.execState.config.prefs.lightness);
       bindings = function() {
-			this.setValue(dlg.execState.prefs.lightness);
+			this.setValue(dlg.execState.config.prefs.lightness);
 		}
 		onValueUpdated = function (value) {
          if (value < 0.001) {
             value = 0.001;
          }
-			dlg.execState.prefs.lightness = value;
+			dlg.execState.config.prefs.lightness = value;
 		}
 		slider.onMousePress = function() {
 			dlg.isSliding = true;
@@ -374,6 +308,8 @@ function alfDialog(executionState)
 			dlg.isSliding = false;
 		}
 	}
+
+   bindResetToNumericControl(dlg.lightnessSlider, 'lightness', dlg.execState.config);
 
    this.saturationSlider = new NumericControl(this);
 	with (this.saturationSlider) {
@@ -384,15 +320,15 @@ function alfDialog(executionState)
 		slider.scaledMinWidth = 60;
 		setPrecision(2);
 		edit.scaledMinWidth = 60;
-      setValue(dlg.execState.prefs.saturation);
+      setValue(dlg.execState.config.prefs.saturation);
 		bindings = function() {
-			this.setValue(dlg.execState.prefs.saturation);
+			this.setValue(dlg.execState.config.prefs.saturation);
 		}
 		onValueUpdated = function (value) {
          if (value < 0.001) {
             value = 0.001;
          }
-			dlg.execState.prefs.saturation = value;
+			dlg.execState.config.prefs.saturation = value;
 		}
 		slider.onMousePress = function() {
 			dlg.isSliding = true;
@@ -402,21 +338,28 @@ function alfDialog(executionState)
 		}
 	}
 
+   bindResetToNumericControl(dlg.saturationSlider, 'saturation', dlg.execState.config);
+
    this.lbllayersRemoved = new Label(this);
    this.lbllayersRemoved.text = "Smoothed wavelet layers:";
 
    this.layersRemovedCombo = new ComboBox(this);
    with (this.layersRemovedCombo) {
-      enabled = dlg.execState.prefs.noiseReduction;
+      enabled = dlg.execState.config.prefs.noiseReduction;
       editEnabled = false;
       bindings = function() {
-         this.currentItem = dlg.execState.prefs.layersRemoved;
+         this.currentItem = dlg.execState.config.prefs.layersRemoved;
       }
       onItemSelected = function(value) {
          let val = dlg.layersRemovedCombo.itemText(value);
-         dlg.execState.prefs.layersRemoved = parseInt(val);
+         dlg.execState.config.prefs.layersRemoved = parseInt(val);
          dlg.rebuildLayers();
       }
+   }
+
+   dlg.execState.config.funcs.layersRemoved.reset = function () {
+      dlg.layersRemovedCombo.currentItem =  dlg.execState.config.prefs.layersRemoved;
+      dlg.layersRemovedCombo.update();
    }
 
    this.removedControl = new HorizontalSizer(this);
@@ -432,39 +375,43 @@ function alfDialog(executionState)
 
    this.layersProtectedCombo = new ComboBox(this);
    with (this.layersProtectedCombo) {
-      enabled = dlg.execState.prefs.noiseReduction;
+      enabled = dlg.execState.config.prefs.noiseReduction;
       editEnabled = false;
       bindings = function() {
-         this.currentItem = dlg.execState.prefs.layersProtected;
+         this.currentItem = dlg.execState.config.prefs.layersProtected;
       }
       onItemSelected = function(value) {
          let val = dlg.layersProtectedCombo.itemText(value);
-         dlg.execState.prefs.layersProtected = parseInt(val);
+         dlg.execState.config.prefs.layersProtected = parseInt(val);
          dlg.rebuildLayers();
       }
    }
 
+   dlg.execState.config.funcs.layersProtected.reset = dlg.rebuildLayers;
+
    this.rebuildLayers = function () {
       dlg.layersRemovedCombo.clear();
       let idx = 0;
-      for (var layers = dlg.execState.prefs.layersProtected + 1; layers <= 6; layers += 1) {
+      for (var layers = dlg.execState.config.prefs.layersProtected + 1; layers <= 6; layers += 1) {
          dlg.layersRemovedCombo.addItem('' + layers);
-         if (layers === dlg.execState.prefs.layersRemoved) {
+         if (layers === dlg.execState.config.prefs.layersRemoved) {
             dlg.layersRemovedCombo.currentItem = idx;
          }
          idx++;
       }
       dlg.layersProtectedCombo.clear();
       idx = 0;
-      let max = dlg.execState.prefs.layersRemoved - 1;
+      let max = dlg.execState.config.prefs.layersRemoved - 1;
       for (var layers = 0; layers <= max; layers += 1) {
          dlg.layersProtectedCombo.addItem('' + layers);
-         if (layers === dlg.execState.prefs.layersProtected) {
+         if (layers === dlg.execState.config.prefs.layersProtected) {
             dlg.layersProtectedCombo.currentItem = idx;
          }
          idx++;
       }
    }
+
+   dlg.execState.config.funcs.layersRemoved.reset = dlg.rebuildLayers;
 
    this.rebuildLayers();
 
@@ -480,9 +427,9 @@ function alfDialog(executionState)
    with (this.chrominance) {
       title = "Chrominance noise reduction";
       titleCheckBox = true;
-      checked = dlg.execState.prefs.noiseReduction;
+      checked = dlg.execState.config.prefs.noiseReduction;
       onCheck = function(value) {
-         dlg.execState.prefs.noiseReduction = value;
+         dlg.execState.config.prefs.noiseReduction = value;
          dlg.layersRemovedCombo.enabled = value;
          dlg.layersProtectedCombo.enabled = value;
       }
@@ -493,27 +440,15 @@ function alfDialog(executionState)
       sizer.add(dlg.protectedControl);
    }
 
-   this.lrgbSettings = new GroupBox(this);
-	with (this.lrgbSettings) {
-		title = "LRGBCombination:";
-		sizer = new VerticalSizer;
-      sizer.margin = 6;
-      sizer.spacing = 4;
-      sizer.add (dlg.lightnessSlider);
-      sizer.add (dlg.saturationSlider);
-      sizer.add(dlg.chrominance);
-	}
+   dlg.execState.config.funcs.noiseReduction.reset = function () {
+      dlg.chrominance.checked = dlg.execState.config.prefs.noiseReduction;
+      dlg.chrominance.update();
+   }
 
 
-   // save parameters
-   this.exportParameters = function() {
-      let prefs = dlg.execState.prefs;
-      for (var propname in prefs) {
-         if (prefs.hasOwnProperty(propname)) {
-            Parameters.set(propname, prefs[propname]);
-         }
-      }
-   };
+   this.lrgbSettings = createVerticalGroupBox(
+      this, 'LRGBCombination', dlg.lightnessSlider, dlg.saturationSlider,
+      dlg.chrominance);
 
    // New Instance button
    this.newInstanceButton = new ToolButton(this);
@@ -525,37 +460,44 @@ function alfDialog(executionState)
          this.hasFocus = true;
          this.pushed = false;
          with ( this.dialog ){
-            dlg.exportParameters();
+            dlg.execState.config.saveParameters();
             newInstance();
          }
       };
    }
 
    // ok and cancel buttons
-   this.okButton = new PushButton (this);
-   this.okButton.text = "OK";
-   this.okButton.icon = this.scaledResource( ":/icons/ok.png" );
+   this.okButton = new ToolButton (this);
+   this.okButton.icon = this.scaledResource( ":/process-interface/apply.png" );
+   this.okButton.setScaledFixedSize ( 20, 20 );
    this.okButton.toolTip="<p>Apply current settings to target image and close.</p>"
-   this.okButton.onClick = function() {
+   this.okButton.onMousePress = function() {
          dlg.okButton.enabled = false;
          doFit(dlg.execState);
+         dlg.execState.config.saveSettings();
          dlg.ok();
    };
 
-   this.cancelButton = new PushButton (this);
-   this.cancelButton.text = "Cancel";
-   this.cancelButton.icon = this.scaledResource( ":/icons/cancel.png" );
-   this.cancelButton.toolTip="<p>Close without applying current settings to target.</p>"
-   this.cancelButton.onClick = function() {
-      this.dialog.cancel();
-   };
+   this.resetButton = new ToolButton(this);
+   with (this.resetButton){
+      icon = this.scaledResource( ":/process-interface/reset.png" );
+      setScaledFixedSize( 20, 20 );
+      toolTip = "Reset";
+      onMousePress = function(){
+         this.hasFocus = true;
+         this.pushed = false;
+         with ( this.dialog ) {
+            dlg.execState.config.reset();
+         }
+      };
+   }
 
    this.buttonSizer = new HorizontalSizer(this);
    this.buttonSizer.spacing = 4;
    this.buttonSizer.add (this.newInstanceButton);
-   this.buttonSizer.addStretch();
    this.buttonSizer.add (this.okButton);
-   this.buttonSizer.add (this.cancelButton);
+   this.buttonSizer.addStretch();
+   this.buttonSizer.add (this.resetButton);
 
    this.sizer = new VerticalSizer(this);
    this.sizer.margin = 6;
@@ -573,60 +515,45 @@ function alfDialog(executionState)
 
 alfDialog.prototype = new Dialog;
 
-// checks for a saved value
-function importParameter(paramName, fn) {
-   if (Parameters.has(paramName)) {
-      var val = fn(paramName);
-      console.writeln(concatenateStr('Parameter ', paramName, ' = ', val));
-      return val;
-   }
-   return null;
-}
-
-function importParametersOfType(prefs, list, fn) {
-   for (var idx = 0; idx < list.length; idx++) {
-      var prop = list[idx];
-      var val = importParameter(prop, fn);
-      if (val===null) {
-         return;
-      }
-      prefs[prop] = val;
-   }
-}
-
-function importParameters(executionState) {
-   let numerics = ['lightness', 'saturation', 'rejectLow', 'rejectHigh'];
-   let integers = ['layersRemoved', 'layersProtected'];
-   let booleans = ['useMin', 'noiseReduction', 'newInstance', 'clipHighlights'];
-
-   importParametersOfType(executionState.prefs, numerics, Parameters.getReal);
-   importParametersOfType(executionState.prefs, integers, Parameters.getInteger);
-   importParametersOfType(executionState.prefs, booleans, Parameters.getBoolean);
-}
-
 function main() {
 
-   let prefs = {
-      useMin: true,
-      lightness: 0.5,
-      saturation: 1.0,
-      noiseReduction: false,
-      layersRemoved: 4,
-      layersProtected: 2,
-      newInstance: false,
-      rejectLow: 0,
-      rejectHigh: 0.92,
-      clipHighlights: true
+   let executionState = {
+      config: createSettingsManager([
+
+         {  setting: "useMin",
+            dataType: DataType_Boolean,
+            defaultValue: true,
+            label: "Use minimum channel",
+            tooltip: "Uses the channel with the minimum median as the source for LinearFit. Otherwise uses the max."},
+
+         {
+            setting: "newInstance",
+            dataType: DataType_Boolean,
+            defaultValue: false,
+            tooltip: "Creates a new image instead of applying the normalization to the target image.",
+		      label: "Create new instance"
+         },
+         {
+            setting: "lightness",
+            dataType: DataType_Double,
+            defaultValue: 0.5
+		   },
+         { setting: "saturation", dataType: DataType_Double, defaultValue: 1.0},
+         { setting: "noiseReduction", dataType: DataType_Boolean, defaultValue: false},
+         { setting: "layersRemoved", dataType: DataType_Int16, defaultValue: 4},
+         { setting: "layersProtected", dataType: DataType_Int16, defaultValue: 2},
+         { setting: "rejectLow", dataType: DataType_Double, defaultValue: 0},
+         { setting: "rejectHigh", dataType: DataType_Double, defaultValue: 0.92},
+         { setting: "clipHighlights", dataType: DataType_Boolean, defaultValue: true}
+      ])
    };
 
-   let executionState = {
-      prefs: prefs
-   };
+   executionState.config.init();
 
    writeLines(concatenateStr('v', VERSION, ' invoked'));
 
    if ( Parameters.isGlobalTarget || Parameters.isViewTarget ) {
-      importParameters(executionState);
+      executionState.config.loadParameters();
    }
 
    if (Parameters.isViewTarget) {

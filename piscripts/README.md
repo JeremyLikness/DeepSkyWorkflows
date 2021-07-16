@@ -15,3 +15,17 @@ This script is intended for use on linear (non-stretched) images with skewed RGB
 5. Use LRGBCombination to merge the fit channels back into the original image
 
 Parameters allow you to use max instead of min, generate a new image instance, and control noise reduction.
+
+## Create Lum Mask
+
+[createLumMask.js](./createLumMask.js)
+
+This script generates a luminance mask. It extracts the luminance, then applies a screen transfer function (STF) followed by a HistogramTransformation.
+
+## Non-Linear Stretch
+
+[nonLinearStretch.js](./nonLinearStretch.js)
+
+This script is designed to increase the contrast. It generations a luminance mask, then applies curves transformations to boost the foreground and diminish
+the background. Set relative weights of the transformations and specify number of iterations. Works best on non-linear (stretched) images.
+
