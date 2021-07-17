@@ -13,6 +13,10 @@ Common routines used across various scripts.
  */
 
 #include <pjsr/DataType.jsh>
+#include <pjsr/StdButton.jsh>
+#include <pjsr/FrameStyle.jsh>
+#include <pjsr/TextAlign.jsh>
+#include <pjsr/NumericControl.jsh>
 
 // concatenate parts into a string
 function concatenateStr() {
@@ -21,6 +25,14 @@ function concatenateStr() {
       str += arguments[arg];
    }
    return str;
+}
+
+function chainFn(target, oldFnName, newFn) {
+   let oldFn = target[oldFnName];
+   return function () {
+      oldFn.apply(target, arguments);
+      newFn.apply(target, arguments);
+   };
 }
 
 // write lines with title prefix
@@ -142,6 +154,50 @@ function bindResetToNumericControl(ctrl, setting, config) {
    }
 }
 
+function createBoundNumericControl(parent, setting, config, sliderRange) {
+
+   let ctrl = new NumericControl(parent);
+   let sliderRanges = sliderRange || { low: 1, high: 100 };
+
+   with (ctrl) {
+		label.text = config.funcs[setting].label;
+      let range = config.funcs[setting].range;
+		label.minWidth = 130;
+      setRange(range.low, range.high);
+      if (config.funcs[setting].precision) {
+		   setPrecision(config.funcs[setting].precision);
+      }
+      slider.setRange(sliderRanges.low, sliderRanges.high);
+		slider.scaledMinWidth = 60;
+		edit.scaledMinWidth = 60;
+      setValue(config.prefs[setting]);
+      bindings = function() {
+			this.setValue(config.prefs[setting]);
+		}
+		onValueUpdated = function (value) {
+         if (value < range.low || value > range.high) {
+            ctrl.setValue(config.prefs[setting]);
+         }
+         else {
+			   config.prefs[setting] = value;
+         }
+		}
+		slider.onMousePress = function() {
+			parent.isSliding = true;
+		}
+		slider.onMouseRelease = function() {
+			parent.isSliding = false;
+		}
+	}
+
+   config.funcs[setting].reset = function () {
+      ctrl.setValue(config.prefs[setting]);
+      ctrl.update();
+   };
+
+   return ctrl;
+}
+
 function createBoundCheckbox(parent, setting, config, existingCheckbox) {
    let checkbox = existingCheckbox || new CheckBox(parent);
 	with (checkbox) {
@@ -162,6 +218,143 @@ function createBoundCheckbox(parent, setting, config, existingCheckbox) {
    }
    return checkbox;
 }
+
+function createProgressBar(blocks) {
+   let progress = {
+      pct: 0,
+      blocks: blocks,
+      bar: '[' + ' '.repeat(blocks)  + ']'
+   };
+   progress.refresh = function (pct) {
+         progress.pct = pct;
+         let completedBlocks = Math.floor(pct * progress.blocks);
+         let remainingBlocks = progress.blocks - completedBlocks;
+         progress.bar = '[' + '#'.repeat(completedBlocks) +
+            ' '.repeat(remainingBlocks) + ']';
+   };
+   return progress;
+}
+
+function createProgressLabel(dlg) {
+   var progress = new Label(dlg);
+   progress.text = '0% Not started.';
+   var progressArea = createGroupBox(dlg, 'Progress', progress);
+   dlg.updateProgress = function (msg) {
+      progress.text = msg;
+   }
+   return progressArea;
+}
+
+function createNewInstanceIcon(dlg, config) {
+   let newInstanceButton = new ToolButton(dlg);
+   with (newInstanceButton){
+      icon = dlg.scaledResource( ":/process-interface/new-instance.png" );
+      setScaledFixedSize( 20, 20 );
+      toolTip = "New Instance";
+      onMousePress = function(){
+         this.hasFocus = true;
+         this.pushed = false;
+         with ( this.dialog ){
+            config.saveParameters();
+            newInstance();
+         }
+      };
+   }
+   return newInstanceButton;
+}
+
+function createPushButton(dlg, btnconfig) {
+   let pushButton = new PushButton (dlg);
+   pushButton.icon = dlg.scaledResource( btnconfig.icon );
+   if (btnconfig.tooltip) {
+      pushButton.toolTip = btnconfig.tooltip;
+   }
+   pushButton.text = btnconfig.text;
+   pushButton.onMousePress = btnconfig.fn;
+   return pushButton;
+}
+
+function createApplyIcon(dlg, config, fn) {
+   let okButton = new ToolButton (dlg);
+   okButton.icon = dlg.scaledResource( ":/process-interface/apply.png" );
+   okButton.setScaledFixedSize ( 20, 20 );
+   okButton.toolTip="<p>Apply current settings to target and close.</p>"
+   okButton.onMousePress = function() {
+         if (dlg.runProcess) {
+            dlg.runProcess(fn);
+         }
+         else {
+            fn();
+         }
+         if (config.closeOnExit) {
+            dlg.ok();
+         }
+   };
+   return okButton;
+}
+
+function createResetIcon(dlg, config) {
+   let resetButton = new ToolButton(dlg);
+   with (resetButton){
+      icon = dlg.scaledResource( ":/process-interface/reset.png" );
+      setScaledFixedSize( 20, 20 );
+      toolTip = "Reset";
+      onMousePress = function(){
+         this.hasFocus = true;
+         this.pushed = false;
+         with ( this.dialog ) {
+            config.reset();
+         }
+      };
+   }
+   return resetButton;
+}
+
+function createToolbar(dlg, config, toolbarSettings) {
+   let settings = toolbarSettings || {};
+   let buttonSizer = new HorizontalSizer(dlg);
+   buttonSizer.spacing = 4;
+
+   if (settings.newInstanceIcon === true) {
+      buttonSizer.add(createNewInstanceIcon(dlg, config));
+   }
+
+   if (settings.applyIcon === true) {
+      buttonSizer.add(createApplyIcon(dlg, config, settings.applyFn));
+   }
+
+   buttonSizer.addStretch();
+
+   if (settings.resetIcon === true) {
+      buttonSizer.add(createResetIcon(dlg, config));
+   }
+
+   return buttonSizer;
+}
+
+function prepareDialog(dlg) {
+   dlg.runProcess = function (fn) {
+      let ctrls = [];
+      for (var prop in dlg) {
+         if (dlg.hasOwnProperty(prop)) {
+            var ctrl = dlg[prop];
+            if (ctrl.enabled && ctrl.enabled === true) {
+               ctrls.push({ ctrl: ctrl, enabled: ctrl.enabled});
+               ctrl.enabled = false;
+               ctrl.update();
+            }
+         }
+      }
+      fn();
+      for (var idx = 0; idx < ctrls.length; idx++) {
+         let ctrlData = ctrls[idx];
+         ctrlData.ctrl.enabled = ctrlData.enabled;
+         ctrlData.ctrl.update();
+      }
+   }
+}
+
+function noop () {}
 
 // pass in an array
 // each element should be:
@@ -190,6 +383,8 @@ function createSettingsManager(config) {
         let label = configValue.label;
         let tooltip = configValue.tooltip;
         let range = configValue.range;
+        let precision = configValue.precision || 0;
+        let persist = !(configValue.hasOwnProperty("persist") && configValue.persist === false);
         defaults[setting] = defaultValue;
         prefs[setting] = defaultValue;
         funcs[setting] = {
@@ -197,19 +392,20 @@ function createSettingsManager(config) {
            label: label,
            tooltip: tooltip,
            range: range,
+           precision: precision,
            reset: function () { },
-           saveSetting: function () {
+           saveSetting: persist ? function () {
               Settings.write(setting, dataType, prefs[setting]);
-           },
+           } : noop,
            readSetting: function () {
               let result = Settings.read(setting, dataType);
               if (Settings.lastReadOK) {
                  prefs[setting] = result;
               }
            },
-           saveParameter: function () {
+           saveParameter: persist ? function () {
               Parameters.set(setting, prefs[setting]);
-           },
+           } : noop,
            readParameter: function () {
               if (Parameters.has(setting)) {
                  prefs[setting] = mappings[dataType](setting);
@@ -221,7 +417,8 @@ function createSettingsManager(config) {
    let newConfig = {
       defaults: defaults,
       prefs: prefs,
-      funcs: funcs
+      funcs: funcs,
+      closeOnExit: true
    };
 
    newConfig.init = function () {

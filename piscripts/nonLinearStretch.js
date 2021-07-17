@@ -10,6 +10,10 @@ using luminance masks and curves transformations.
  *
  * Copyright Jeremy Likness, 2021
  *
+ * License: https://github.com/JeremyLikness/DeepSkyWorkflows/LICENSE
+ *
+ * Source: https://github.com/JeremyLikness/DeepSkyWorkflows/tree/master/piscripts
+ *
  *
  * mailTo:deepskyworkflows@gmail.com
  */
@@ -34,12 +38,15 @@ function getCurvesTransformation(executionState, up) {
 
    let aggressiveness = up ? executionState.config.prefs.foregroundFactor :
       executionState.config.prefs.backgroundFactor;
-   let pctAggressive = aggressiveness/100;
-   let offset = 0.25 * pctAggressive;
-   let min = up ? (0.5-offset) : (0.5 + offset);
-   let max = up ? (0.5+offset) : (0.5 - offset);
 
-   var P = new CurvesTransformation;
+   let pctAggressive = aggressiveness/100;
+   let offset = 0.4 * pctAggressive;
+   let x = 0.5;
+   let y = up ? x + offset : x - offset;
+
+   let P = executionState.curves || new CurvesTransformation;
+   executionState.curves = P;
+
    P.R = [ // x, y
       [0.00000, 0.00000],
       [1.00000, 1.00000]
@@ -57,7 +64,7 @@ function getCurvesTransformation(executionState, up) {
    P.Bt = CurvesTransformation.prototype.AkimaSubsplines;
    P.K = [ // x, y
       [0.00000, 0.00000],
-      [min, max],
+      [x, y],
       [1.00000, 1.00000]
    ];
    P.Kt = CurvesTransformation.prototype.AkimaSubsplines;
@@ -106,35 +113,42 @@ function createMask(executionState) {
 }
 
 function iteration(executionState) {
+
    console.writeln('Generating mask for iteration...');
+
    var start = getImageSnapshotStr(imageSnapshot(executionState.view.image));
    var mask = createMask(executionState);
+
    writeLines(concatenateStr('Generated mask ', mask.id));
-
-   console.writeln('Increasing foreground...');
-
-   executionState.view.window.mask = mask.window;
-   executionState.view.window.maskEnabled = true;
-   executionState.view.window.maskInverted = false;
 
    var curves = getCurvesTransformation(executionState, true);
 
    if (curves !== null) {
+      console.writeln('Increasing foreground...');
+
+      executionState.view.window.mask = mask.window;
+      executionState.view.window.maskEnabled = true;
+      executionState.view.window.maskInverted = false;
+
       curves.executeOn(executionState.view, true);
    }
 
-   console.writeln('Decreasing background...');
-
-   executionState.view.window.maskInverted = true;
    curves = getCurvesTransformation(executionState, false);
 
    if (curves !== null) {
+      console.writeln('Decreasing background...');
+
+      executionState.view.window.mask = mask.window;
+      executionState.view.window.maskEnabled = true;
+      executionState.view.window.maskInverted = true;
+
       curves.executeOn(executionState.view, true);
    }
 
    mask.window.forceClose();
 
    var end = getImageSnapshotStr(imageSnapshot(executionState.view.image));
+
    writeLines('Iteration results:', concatenateStr('Before: ', start),
       concatenateStr('After: ', end));
 }
@@ -154,14 +168,28 @@ function doStretch(executionState) {
 
    var start = getImageSnapshotStr(imageSnapshot(executionState.view.image));
 
+   let progress = createProgressBar(15);
+
+   let updateProgress = executionState.updateProgress || function () {};
+
+   updateProgress(concatenateStr(progress.bar, ' 0% Starting...'));
+
    for (var i = 0; i < executionState.config.prefs.iterations; i++) {
       writeLines(concatenateStr('Starting iteration ', i+1));
       iteration(executionState);
+      let pctComplete = i/executionState.config.prefs.iterations;
+      let pctWhole = Math.ceil(pctComplete * 100);
+      progress.refresh(pctComplete);
+      updateProgress(concatenateStr(progress.bar, ' ', pctWhole, '% ', i+1, ' of ',
+         executionState.config.prefs.iterations));
    }
 
    var end = getImageSnapshotStr(imageSnapshot(executionState.view.image));
    writeLines('Final results:', concatenateStr('Before: ', start),
       concatenateStr('After: ', end));
+
+   progress.refresh(1);
+   updateProgress(progress.bar, ' Done.');
 
    writeLines('Done');
 
@@ -175,8 +203,11 @@ function nlsDialog(executionState)
    this.__base__();
 
    var dlg = this;
-
+   prepareDialog(dlg);
    this.execState = executionState;
+   this.progressBar = createProgressLabel(dlg);
+   dlg.updateProgress('Not started');
+   executionState.updateProgress = dlg.updateProgress;
 
    // ------------------------------------------------------------------------
    // GUI
@@ -189,138 +220,109 @@ function nlsDialog(executionState)
       text = concatenateStr('<b>', TITLE, ' v', VERSION, '</b>');
    }
 
-
    // my copyright
    this.lblCopyright = new Label(this);
    this.lblCopyright.text = "© 2021, Jeremy Likness";
 
+   this.foregroundPreview = createBoundCheckbox(dlg, 'previewForeground',
+      dlg.execState.config);
+
+   this.backgroundPreview = createBoundCheckbox(dlg, 'previewBackground',
+      dlg.execState.config);
+
    // main settings
-   this.foregroundSlider = new NumericControl(this);
-	with (this.foregroundSlider) {
-		label.text = "Foreground Factor:";
-		label.minWidth = 130;
-		setRange(0, 100);
-		slider.setRange(0, 100);
-		slider.scaledMinWidth = 60;
-		setPrecision(2);
-		edit.scaledMinWidth = 60;
-      setValue(dlg.execState.config.prefs.foregroundFactor);
-      bindings = function() {
-			this.setValue(dlg.execState.config.prefs.foregroundFactor);
-		}
-		onValueUpdated = function (value) {
-         dlg.execState.config.prefs.foregroundFactor = value;
-		}
-		slider.onMousePress = function() {
-			dlg.isSliding = true;
-		}
-		slider.onMouseRelease = function() {
-			dlg.isSliding = false;
-		}
-	}
+   this.foregroundSlider = createBoundNumericControl(dlg, 'foregroundFactor',
+      dlg.execState.config, { low: 0, high: 100 });
 
-   bindResetToNumericControl(dlg.foregroundSlider, 'foregroundFactor', dlg.execState.config);
+   this.backgroundSlider = createBoundNumericControl(dlg, 'backgroundFactor',
+      dlg.execState.config, { low: 0, high: 100 });
 
-   this.backgroundSlider = new NumericControl(this);
-	with (this.backgroundSlider) {
-		label.text = "Background Factor:";
-		label.minWidth = 130;
-		setRange(0, 100);
-		slider.setRange(0, 100);
-		slider.scaledMinWidth = 60;
-		setPrecision(2);
-		edit.scaledMinWidth = 60;
-      setValue(dlg.execState.config.prefs.backgroundFactor);
-      bindings = function() {
-			this.setValue(dlg.execState.config.prefs.backgroundFactor);
-		}
-		onValueUpdated = function (value) {
-         dlg.execState.config.prefs.backgroundFactor = value;
-		}
-		slider.onMousePress = function() {
-			dlg.isSliding = true;
-		}
-		slider.onMouseRelease = function() {
-			dlg.isSliding = false;
-		}
-	}
-
-   bindResetToNumericControl(dlg.backgroundSlider, 'backgroundFactor', dlg.execState.config);
-
-   this.iterationsSlider = new NumericControl(this);
-	with (this.iterationsSlider) {
-		label.text = "Iterations:";
-		label.minWidth = 130;
-		setRange(1, 1000);
-		slider.setRange(1, 1000);
-		slider.scaledMinWidth = 60;
-		setPrecision(2);
-		edit.scaledMinWidth = 60;
-      setValue(dlg.execState.config.prefs.iterations);
-      bindings = function() {
-			this.setValue(dlg.execState.config.prefs.iterations);
-		}
-		onValueUpdated = function (value) {
-         dlg.execState.config.prefs.iterations = value;
-		}
-		slider.onMousePress = function() {
-			dlg.isSliding = true;
-		}
-		slider.onMouseRelease = function() {
-			dlg.isSliding = false;
-		}
-	}
-
-   bindResetToNumericControl(dlg.iterationsSlider, 'iterations', dlg.execState.config);
-
-   // New Instance button
-   this.newInstanceButton = new ToolButton(this);
-   with (this.newInstanceButton){
-      icon = this.scaledResource( ":/process-interface/new-instance.png" );
-      setScaledFixedSize( 20, 20 );
-      toolTip = "New Instance";
-      onMousePress = function(){
-         this.hasFocus = true;
-         this.pushed = false;
-         with ( this.dialog ){
-            dlg.execState.config.saveParameters();
-            newInstance();
+   this.previewButton = createPushButton(dlg, {
+      icon: ":/process-interface/execute.png",
+      text: "Preview curves",
+      fn: function () {
+         var curves = getCurvesTransformation(dlg.execState,
+            dlg.execState.config.prefs.previewForeground);
+         if (curves) {
+            curves.launchInterface();
          }
-      };
-   }
+         with (dlg.execState.config.prefs) {
+            previewForeground = false;
+            previewBackground = false;
+            dlg.foregroundPreview.checked = false;
+            dlg.backgroundPreview.checked = false;
+         }
+         dlg.previewButton.enabled = false;
+      }
+   });
 
-   // ok and cancel buttons
-   this.okButton = new ToolButton (this);
-   this.okButton.icon = this.scaledResource( ":/process-interface/apply.png" );
-   this.okButton.setScaledFixedSize ( 20, 20 );
-   this.okButton.toolTip="<p>Apply current settings to target image and close.</p>"
-   this.okButton.onMousePress = function() {
-         dlg.okButton.enabled = false;
-         doStretch(dlg.execState);
-         dlg.execState.config.saveSettings();
-         dlg.ok();
+   this.previewButton.enabled = dlg.execState.config.prefs.previewForeground ||
+      dlg.execState.config.prefs.previewBackground;
+
+   this.foregroundPreview.onCheck = chainFn(
+      dlg.foregroundPreview,
+      'onCheck',
+      function (val) {
+         if (val) {
+            dlg.backgroundPreview.checked = false;
+            dlg.previewButton.enabled = true;
+         }
+         else {
+            dlg.previewButton.enabled = dlg.backgroundPreview.checked;
+         }
+      });
+
+   this.backgroundPreview.onCheck = chainFn(
+      dlg.backgroundPreview,
+      'onCheck',
+      function (val) {
+         if (val) {
+            dlg.foregroundPreview.checked = false;
+            dlg.previewButton.enabled = true;
+         }
+         else {
+            dlg.previewButton.enabled = dlg.foregroundPreview.checked;
+         }
+      });
+
+   this.foregroundSlider.onValueUpdated = chainFn(
+      dlg.foregroundSlider,
+      'onValueUpdated',
+      function (val) {
+         dlg.foregroundPreview.enabled = val > 0;
+      });
+
+   this.backgroundSlider.onValueUpdated = chainFn(
+      dlg.backgroundSlider,
+      'onValueUpdated',
+      function (val) {
+         dlg.backgroundPreview.enabled = val > 0;
+      });
+
+   dlg.execState.config.funcs.previewForeground.reset = function () {
+      dlg.foregroundPreview.enabled = dlg.execState.config.prefs.foregroundFactor > 0;
+      dlg.previewButton.enabled = dlg.execState.config.prefs.previewForeground ||
+         dlg.execState.config.prefs.previewBackground;
    };
 
-   this.resetButton = new ToolButton(this);
-   with (this.resetButton){
-      icon = this.scaledResource( ":/process-interface/reset.png" );
-      setScaledFixedSize( 20, 20 );
-      toolTip = "Reset";
-      onMousePress = function(){
-         this.hasFocus = true;
-         this.pushed = false;
-         with ( this.dialog ) {
-            dlg.execState.config.reset();
-         }
-      };
-   }
+   dlg.execState.config.funcs.previewBackground.reset = function () {
+      dlg.backgroundPreview.enabled = dlg.execState.config.prefs.backgroundFactor > 0;
+      dlg.previewButton.enabled = dlg.execState.config.prefs.previewForeground ||
+         dlg.execState.config.prefs.previewBackground;
+   };
 
-   this.buttonSizer = new HorizontalSizer(this);
-   this.buttonSizer.spacing = 4;
-   this.buttonSizer.add (this.newInstanceButton);
-   this.buttonSizer.add (this.okButton);
-   this.buttonSizer.addStretch();
-   this.buttonSizer.add (this.resetButton);
+	this.iterationsSlider = createBoundNumericControl(dlg, 'iterations',
+      dlg.execState.config, { low: 1, high: 1000 });
+
+   this.buttonSizer = createToolbar(this, dlg.execState.config, {
+      newInstanceIcon: true,
+      applyIcon: true,
+      applyFn: function () {
+         doStretch(dlg.execState);
+         dlg.execState.config.saveSettings();
+      },
+      resetIcon: true
+   });
 
    this.sizer = new VerticalSizer(this);
    with (this.sizer) {
@@ -329,8 +331,12 @@ function nlsDialog(executionState)
       add(dlg.lblHeadLine);
       add(dlg.lblCopyright);
       add(dlg.foregroundSlider);
+      add(dlg.foregroundPreview);
       add(dlg.backgroundSlider);
+      add(dlg.backgroundPreview);
+      add(dlg.previewButton);
       add(dlg.iterationsSlider);
+      add(dlg.progressBar);
       add(dlg.buttonSizer);
    }
 }
@@ -345,21 +351,45 @@ function main() {
          {  setting: "foregroundFactor",
             dataType: DataType_Int16,
             defaultValue: 2,
-            label: "Foreground Factor",
-            tooltip: "Scale from 1 to 100 for how intense each stretch is for the foreground."},
-
+            label: "Foreground factor:",
+            precision: 1,
+            tooltip: "Scale from 0 to 100 for how intense each stretch is for the foreground.",
+            range: { low: 0, high: 100 }
+         },
+         {
+            setting: "previewForeground",
+            dataType: DataType_Boolean,
+            defaultValue: false,
+            label: "Preview foreground curve",
+            tooltip: "Launch the <b>CurvesTransformation</b> interface to preview the curve.",
+            persist: false
+         },
          {
             setting: "backgroundFactor",
             dataType: DataType_Int16,
             defaultValue: 10,
-            label: "Background Factor",
-            tooltip: "Scale from 1 to 100 for how intense each stretch is for the background."},
+            label: "Background factor:",
+            precision: 1,
+            tooltip: "Scale from 0 to 100 for how intense each stretch is for the background.",
+            range: { low: 0, high: 100 }
+         },
+          {
+            setting: "previewBackground",
+            dataType: DataType_Boolean,
+            defaultValue: false,
+            label: "Preview background curve",
+            tooltip: "Launch the <b>CurvesTransformation</b> interface to preview the curve.",
+            persist: false
+         },
          {
             setting: "iterations",
             dataType: DataType_Int16,
             defaultValue: 10,
-            label: "Iterations",
-            tooltip: "Iterations to apply (1 - 1000)."}
+            label: "Iterations:",
+            precision: 1,
+            tooltip: "Iterations to apply (1 - 1000).",
+            range: { low: 1, high: 1000 }
+         }
       ])
    };
 

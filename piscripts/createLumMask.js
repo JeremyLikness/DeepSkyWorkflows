@@ -9,7 +9,11 @@ This script will extract luminance and stretch it for a mask.
  *
  *
  * Copyright Jeremy Likness, 2021
- * *
+ *
+ * License: https://github.com/JeremyLikness/DeepSkyWorkflows/LICENSE
+ *
+ * Source: https://github.com/JeremyLikness/DeepSkyWorkflows/tree/master/piscripts
+ *
  * mailTo:deepskyworkflows@gmail.com
  */
 

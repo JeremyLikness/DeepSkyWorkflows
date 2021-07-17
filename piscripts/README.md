@@ -2,30 +2,27 @@
 
 This folder contains various script to assist with workflows.
 
-## Auto Linear Fit
+## Scripts
 
-[autoLinearFitAndCombine.js](./autoLinearFitAndCombine.js)
+These are the active scripts. I have available to date.
 
-This script is intended for use on linear (non-stretched) images with skewed RGB channels. If you have to link RGB in STF, you probably want this. The standard workflow:
+- [Auto-Linear Fit](./docs/autoLinearFit.md) is a script for normalizing RGB channels.
+- [Create Lum Mask](./docs/createLumMask.md) is a quick way to generate a luminance mask from a non-linear image.
+- [Non-Linear Stretch](./docs/nonLinearStretch.md) can help boost the brightness of your targets while diminishing the background.
 
-1. Split the RGB channels
-2. Calculate their median values
-3. Choose the channel with the lowest median value
-4. Run LinearFit using the reference channel on the other channels
-5. Use LRGBCombination to merge the fit channels back into the original image
+## Installation
 
-Parameters allow you to use max instead of min, generate a new image instance, and control noise reduction.
+The first step is to download the scripts. You can either clone this repository, or [download the zip](./piscripts.zip).
 
-## Create Lum Mask
+Once you have the scripts in a folder, for example, `DeepSkyWorkflows`, you can install with the following steps:
 
-[createLumMask.js](./createLumMask.js)
+1. Open PixInsight
+2. Under the `Scripts` tab, choose `Feature Scripts`
+   ![Feature scripts](./docs/images/step1.png)
+3. With the dialog that opens, click the `Add` button in the lower left
+4. Navigate to and select the folder with the scripts
+5. Verify that `DeepSkyWorkflows` has been added
+   ![Verify](./docs/images/confirmscriptadd.png)
+6. You're ready to go! It should appear under `Scripts > DeepSkyWorkflows`.
 
-This script generates a luminance mask. It extracts the luminance, then applies a screen transfer function (STF) followed by a HistogramTransformation.
-
-## Non-Linear Stretch
-
-[nonLinearStretch.js](./nonLinearStretch.js)
-
-This script is designed to increase the contrast. It generations a luminance mask, then applies curves transformations to boost the foreground and diminish
-the background. Set relative weights of the transformations and specify number of iterations. Works best on non-linear (stretched) images.
-
+[Back to Main](../README.md)

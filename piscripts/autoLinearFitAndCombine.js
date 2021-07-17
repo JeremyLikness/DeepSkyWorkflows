@@ -11,7 +11,11 @@ then use LRGB to combine them.
  *
  * Copyright Jeremy Likness, 2021
  *
- * Based on source by Ivan Smith
+ * Based on source by Ivan Smith and EZProcessingScripts
+ *
+ * License: https://github.com/JeremyLikness/DeepSkyWorkflows/LICENSE
+ *
+ * Source: https://github.com/JeremyLikness/DeepSkyWorkflows/tree/master/piscripts
  *
  * mailTo:deepskyworkflows@gmail.com
  */
@@ -22,12 +26,6 @@ then use LRGB to combine them.
 #define VERSION "0.1"
 
 #include "deepSkyCommon.js"
-
-#include <pjsr/StdButton.jsh>
-#include <pjsr/DataType.jsh>
-#include <pjsr/FrameStyle.jsh>
-#include <pjsr/TextAlign.jsh>
-#include <pjsr/NumericControl.jsh>
 
 // separate the channels
 function separateChannels(executionState) {
@@ -96,7 +94,7 @@ function findMinOrMaxChannel(executionState) {
 }
 
 // apply linear fit to other two channels
-function linearFit(executionState) {
+function linearFit(executionState, progress) {
 
    // linear fit using reference channel
    let lf = new LinearFit;
@@ -107,9 +105,14 @@ function linearFit(executionState) {
       ' rejectHigh: ', executionState.config.prefs.rejectHigh));
 
    lf.referenceViewId = executionState.channels[executionState.tgtId][1];
+   let firstChannel = true;
    for (var i = 0; i < executionState.channelImgs.length; i++) {
       if (executionState.tgtId != i) {
          lf.executeOn(executionState.channelImgs[i]);
+         if (firstChannel) {
+            progress('50% Fitting 2nd channel...');
+            firstChannel = false;
+         }
       }
    }
 }
@@ -165,13 +168,25 @@ function doFit(executionState) {
       return;
    }
 
+   let progress = executionState.updateProgress || function (msg) {};
+
+   progress('0% Separating channels...');
+
    separateChannels(executionState);
+
+   progress('10% Computing reference channel...');
 
    findMinOrMaxChannel(executionState);
 
-   linearFit(executionState);
+   progress('20% Applying LinearFit...');
+
+   linearFit(executionState, progress);
+
+   progress('80% Combining channels...');
 
    lrgbCombine(executionState);
+
+   progress('100% Done.');
 
    writeLines('Done');
 
@@ -187,8 +202,10 @@ function alfDialog(executionState)
    this.__base__();
 
    var dlg = this;
+   prepareDialog(dlg);
 
    this.execState = executionState;
+   this.progressArea = createProgressLabel(dlg);
 
    // ------------------------------------------------------------------------
    // GUI
@@ -200,7 +217,6 @@ function alfDialog(executionState)
       useRichText = true;
       text = concatenateStr('<b>', TITLE, ' v', VERSION, '</b>');
    }
-
 
    // my copyright
    this.lblCopyright = new Label(this);
@@ -218,127 +234,53 @@ function alfDialog(executionState)
       null, dlg.newInstanceCheckbox);
 
    // linear fit settings
-   this.rejectLowSlider = new NumericControl(this);
-	with (this.rejectLowSlider) {
-		label.text = "Reject low:";
-		label.minWidth = 130;
-		setRange(0, 1);
-		slider.setRange(0, 100);
-		slider.scaledMinWidth = 60;
-		setPrecision(2);
-		edit.scaledMinWidth = 60;
-      setValue(dlg.execState.config.prefs.rejectLow);
-      bindings = function() {
-			this.setValue(dlg.execState.config.prefs.rejectLow);
-		}
-		onValueUpdated = function (value) {
-         if (value >= 1.0 || value >= dlg.execState.config.prefs.rejectHigh) {
-            value = dlg.execState.config.prefs.rejectHigh * 0.9;
-            dlg.rejectLowSlider.setValue(value);
-         }
-			dlg.execState.config.prefs.rejectLow = value;
-		}
-		slider.onMousePress = function() {
-			dlg.isSliding = true;
-		}
-		slider.onMouseRelease = function() {
-			dlg.isSliding = false;
-		}
-	}
+   this.rejectLowSlider = createBoundNumericControl(this, 'rejectLow', executionState.config,
+      {low: 1, high: 100 });
 
-   bindResetToNumericControl(dlg.rejectLowSlider, 'rejectLow', dlg.execState.config);
+   this.rejectLowSlider.onValueUpdated = function (value) {
+      if (value >= 1.0 || value >= dlg.execState.config.prefs.rejectHigh) {
+         value = dlg.execState.config.prefs.rejectHigh * 0.9;
+         dlg.rejectLowSlider.setValue(value);
+      }
+      dlg.execState.config.prefs.rejectLow = value;
+   };
 
-   this.rejectHighSlider = new NumericControl(this);
-	with (this.rejectHighSlider) {
-		label.text = "Reject high:";
-		label.minWidth = 130;
-		setRange(0, 1);
-		slider.setRange(0, 100);
-		slider.scaledMinWidth = 60;
-		setPrecision(2);
-		edit.scaledMinWidth = 60;
-      setValue(dlg.execState.config.prefs.rejectHigh);
-		bindings = function() {
-			this.setValue(dlg.execState.config.prefs.rejectHigh);
-		}
-		onValueUpdated = function (value) {
-         if (value <= 0 || value <= dlg.execState.config.prefs.rejectLow) {
-            value = dlg.execState.config.prefs.rejectLow * 1.01;
-            dlg.rejectHighSlider.setValue(value);
-         }
-			dlg.execState.config.prefs.rejectHigh = value;
-		}
-		slider.onMousePress = function() {
-			dlg.isSliding = true;
-		}
-		slider.onMouseRelease = function() {
-			dlg.isSliding = false;
-		}
-	}
+   this.rejectHighSlider = createBoundNumericControl(this, 'rejectHigh', executionState.config,
+      {low: 1, high: 100 });
 
-   bindResetToNumericControl(dlg.rejectHighSlider, 'rejectHigh', dlg.execState.config);
+   this.rejectHighSlider.onValueUpdated = function (value) {
+      if (value <= 0 || value <= dlg.execState.config.prefs.rejectLow) {
+         value = dlg.execState.config.prefs.rejectLow * 1.01;
+         dlg.rejectHighSlider.setValue(value);
+      }
+      dlg.execState.config.prefs.rejectHigh = value;
+   };
 
    this.lFitSettings = createVerticalGroupBox(this, 'Linear fit', dlg.rejectLowSlider,
       dlg.rejectHighSlider);
 
    // linear fit settings
-   this.lightnessSlider = new NumericControl(this);
-	with (this.lightnessSlider) {
-		label.text = "Lightness:";
-		label.minWidth = 130;
-      setRange(0.001, 1);
-		setPrecision(2);
-      slider.setRange(1, 100);
-		slider.scaledMinWidth = 60;
-		edit.scaledMinWidth = 60;
-      setValue(dlg.execState.config.prefs.lightness);
-      bindings = function() {
-			this.setValue(dlg.execState.config.prefs.lightness);
-		}
-		onValueUpdated = function (value) {
-         if (value < 0.001) {
-            value = 0.001;
-         }
-			dlg.execState.config.prefs.lightness = value;
-		}
-		slider.onMousePress = function() {
-			dlg.isSliding = true;
-		}
-		slider.onMouseRelease = function() {
-			dlg.isSliding = false;
-		}
-	}
+   this.lightnessSlider = createBoundNumericControl(this, 'lightness', executionState.config,
+      {low: 1, high: 100 });
 
-   bindResetToNumericControl(dlg.lightnessSlider, 'lightness', dlg.execState.config);
+   this.lightnessSlider.onValueUpdated = function (value) {
+      if (value < 0.001) {
+         value = 0.001;
+         dlg.lightnessSlider.setValue(0.001);
+      }
+      dlg.execState.config.prefs.lightness = value;
+   };
 
-   this.saturationSlider = new NumericControl(this);
-	with (this.saturationSlider) {
-		label.text = "Saturation:";
-		label.minWidth = 130;
-		setRange(0.001, 1);
-		slider.setRange(1, 100);
-		slider.scaledMinWidth = 60;
-		setPrecision(2);
-		edit.scaledMinWidth = 60;
-      setValue(dlg.execState.config.prefs.saturation);
-		bindings = function() {
-			this.setValue(dlg.execState.config.prefs.saturation);
-		}
-		onValueUpdated = function (value) {
-         if (value < 0.001) {
-            value = 0.001;
-         }
-			dlg.execState.config.prefs.saturation = value;
-		}
-		slider.onMousePress = function() {
-			dlg.isSliding = true;
-		}
-		slider.onMouseRelease = function() {
-			dlg.isSliding = false;
-		}
-	}
+   this.saturationSlider = createBoundNumericControl(this, 'saturation', executionState.config,
+      {low: 1, high: 100 });
 
-   bindResetToNumericControl(dlg.saturationSlider, 'saturation', dlg.execState.config);
+   this.saturationSlider.onValueUpdated = function (value) {
+      if (value < 0.001) {
+         value = 0.001;
+         dlg.saturationSlider.setValue(0.001);
+      }
+      dlg.execState.config.prefs.saturation = value;
+   };
 
    this.lbllayersRemoved = new Label(this);
    this.lbllayersRemoved.text = "Smoothed wavelet layers:";
@@ -387,8 +329,6 @@ function alfDialog(executionState)
       }
    }
 
-   dlg.execState.config.funcs.layersProtected.reset = dlg.rebuildLayers;
-
    this.rebuildLayers = function () {
       dlg.layersRemovedCombo.clear();
       let idx = 0;
@@ -411,6 +351,7 @@ function alfDialog(executionState)
       }
    }
 
+   dlg.execState.config.funcs.layersProtected.reset = dlg.rebuildLayers;
    dlg.execState.config.funcs.layersRemoved.reset = dlg.rebuildLayers;
 
    this.rebuildLayers();
@@ -445,59 +386,20 @@ function alfDialog(executionState)
       dlg.chrominance.update();
    }
 
-
    this.lrgbSettings = createVerticalGroupBox(
       this, 'LRGBCombination', dlg.lightnessSlider, dlg.saturationSlider,
       dlg.chrominance);
 
-   // New Instance button
-   this.newInstanceButton = new ToolButton(this);
-   with (this.newInstanceButton){
-      icon = this.scaledResource( ":/process-interface/new-instance.png" );
-      setScaledFixedSize( 20, 20 );
-      toolTip = "New Instance";
-      onMousePress = function(){
-         this.hasFocus = true;
-         this.pushed = false;
-         with ( this.dialog ){
-            dlg.execState.config.saveParameters();
-            newInstance();
-         }
-      };
-   }
-
-   // ok and cancel buttons
-   this.okButton = new ToolButton (this);
-   this.okButton.icon = this.scaledResource( ":/process-interface/apply.png" );
-   this.okButton.setScaledFixedSize ( 20, 20 );
-   this.okButton.toolTip="<p>Apply current settings to target image and close.</p>"
-   this.okButton.onMousePress = function() {
-         dlg.okButton.enabled = false;
-         doFit(dlg.execState);
-         dlg.execState.config.saveSettings();
-         dlg.ok();
-   };
-
-   this.resetButton = new ToolButton(this);
-   with (this.resetButton){
-      icon = this.scaledResource( ":/process-interface/reset.png" );
-      setScaledFixedSize( 20, 20 );
-      toolTip = "Reset";
-      onMousePress = function(){
-         this.hasFocus = true;
-         this.pushed = false;
-         with ( this.dialog ) {
-            dlg.execState.config.reset();
-         }
-      };
-   }
-
-   this.buttonSizer = new HorizontalSizer(this);
-   this.buttonSizer.spacing = 4;
-   this.buttonSizer.add (this.newInstanceButton);
-   this.buttonSizer.add (this.okButton);
-   this.buttonSizer.addStretch();
-   this.buttonSizer.add (this.resetButton);
+   this.buttonSizer = createToolbar(dlg, dlg.execState.config, {
+         newInstanceIcon: true,
+         applyIcon: true,
+         applyFn: function () {
+            dlg.execState.updateProgress = dlg.updateProgress;
+            doFit(dlg.execState);
+            dlg.execState.config.saveSettings();
+         },
+         resetIcon: true
+      });
 
    this.sizer = new VerticalSizer(this);
    this.sizer.margin = 6;
@@ -507,6 +409,7 @@ function alfDialog(executionState)
    this.sizer.add(this.mainSettings);
    this.sizer.add(this.lFitSettings);
    this.sizer.add(this.lrgbSettings);
+   this.sizer.add(this.progressArea);
    this.sizer.add(this.buttonSizer);
    this.windowTitle = concatenateStr(TITLE, ' v', VERSION);
 
@@ -535,15 +438,39 @@ function main() {
          },
          {
             setting: "lightness",
+            label: "Lightness:",
+            range: { low: 0.001, high: 1.0 },
             dataType: DataType_Double,
+            precision: 3,
             defaultValue: 0.5
 		   },
-         { setting: "saturation", dataType: DataType_Double, defaultValue: 1.0},
+         {
+            setting: "saturation",
+            label: "Saturation:",
+            range: { low: 0.001, high: 1.0 },
+            dataType: DataType_Double,
+            precision: 3,
+            defaultValue: 1.0
+         },
          { setting: "noiseReduction", dataType: DataType_Boolean, defaultValue: false},
          { setting: "layersRemoved", dataType: DataType_Int16, defaultValue: 4},
          { setting: "layersProtected", dataType: DataType_Int16, defaultValue: 2},
-         { setting: "rejectLow", dataType: DataType_Double, defaultValue: 0},
-         { setting: "rejectHigh", dataType: DataType_Double, defaultValue: 0.92},
+         {
+            setting: "rejectLow",
+            label: "Reject low:",
+            dataType: DataType_Double,
+            defaultValue: 0,
+            precision: 2,
+            range: { low: 0, high: 1 }
+         },
+         {
+            setting: "rejectHigh",
+            label: "Reject high:",
+            dataType: DataType_Double,
+            defaultValue: 0.92,
+            precision: 2,
+            range: { low: 0, high: 1 }
+         },
          { setting: "clipHighlights", dataType: DataType_Boolean, defaultValue: true}
       ])
    };
