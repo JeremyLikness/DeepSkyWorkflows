@@ -321,14 +321,14 @@ function doDecon(executionState) {
 
 function validate(dlg, executionState) {
    let prefs = executionState.config.prefs;
-   if (prefs.extractLum) {
+   if (prefs.extractLum === true) {
       delete executionState.masks.lum;
    }
    else if (!(executionState.masks.lum && executionState.masks.lum.id)) {
       showDialog("Validation failed", "Luminance channel is required");
       return false;
    }
-   if (prefs.generatetLumMask) {
+   if (prefs.generateLumMask === true) {
       delete executionState.masks.lumMask;
    }
    else if (!(executionState.masks.lumMask && executionState.masks.lumMask.id)) {

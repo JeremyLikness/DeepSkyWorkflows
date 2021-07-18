@@ -21,7 +21,6 @@ using luminance masks and curves transformations.
 #feature-id    DeepSkyWorkflows > NonLinearStretch
 
 #define TITLE "Non-Linear Stretch"
-#define VERSION "0.1"
 
 #include "deepSkyCommon.js"
 

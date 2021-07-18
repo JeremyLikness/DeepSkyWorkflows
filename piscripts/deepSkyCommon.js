@@ -12,7 +12,7 @@ Common routines used across various scripts.
  * mailTo:deepskyworkflows@gmail.com
  */
 
-#define VERSION "0.2"
+#define VERSION "0.2.1"
 
 #include <pjsr/DataType.jsh>
 #include <pjsr/StdButton.jsh>
