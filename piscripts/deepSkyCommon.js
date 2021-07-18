@@ -12,7 +12,7 @@ Common routines used across various scripts.
  * mailTo:deepskyworkflows@gmail.com
  */
 
-#define VERSION "0.2.1"
+#define VERSION "0.3"
 
 #include <pjsr/DataType.jsh>
 #include <pjsr/StdButton.jsh>
@@ -105,6 +105,22 @@ function applySettings(settingsObj, keys, type) {
       }
    }
 }
+
+let align = function(ctrl, alignment) {
+   var container = new HorizontalSizer;
+   if (alignment !== align.ALIGN_LEFT) {
+      container.addStretch();
+   }
+   container.add(ctrl);
+   if (alignment !== align.ALIGN_RIGHT) {
+      container.addStretch();
+   }
+   return container;
+}
+
+align.ALIGN_LEFT = 0;
+align.ALIGN_CENTER = 1;
+align.ALIGN_RIGHT = 2;
 
 function createVerticalGroupBox() {
    let groupBox = new GroupBox(arguments[0]);

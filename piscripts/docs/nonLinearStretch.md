@@ -14,6 +14,8 @@ This script is designed to increase the contrast. It generations a luminance mas
 4. Choose the number of iterations.
 5. The script will create a mask, apply it, and apply the foreground curve. It will then invert the mask and apply the background curve. It will repeat for the iterations you specify.
 
+> **TIP** try configuring your settings and set iterations to 1. Drag the script onto the workspace to create an icon. You can then drag the icon onto the picture to see the result, and keep dragging it until you achieve the desired result.
+
 ![Non-Linear Stretch Example](./images/nonlinearstretchexample.png)
 
 [Back to Scripts](../README.md)
