@@ -2,7 +2,7 @@
 
 ## Create Luminance Mask
 
-[createLumMask.js](./createLumMask.js)
+[createLumMask.js](../createLumMask.js)
 
 This script generates a luminance mask from a linear (non-stretched) image. It extracts the luminance, then applies a screen transfer function (STF) followed by a HistogramTransformation.
 

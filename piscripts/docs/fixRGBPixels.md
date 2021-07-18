@@ -4,7 +4,7 @@
 
 ![Fix RGB Pixels Dialog](./images/fixrgbdialog.png)
 
-[nonLinearStretch.js](./nonLinearStretch.js)
+[fixRGBPixels.js](../fixRGBpixels.js)
 
 This script is designed to remove outlying red, green, and blue pixels from linear (unstretched) images. It is a very simple algorithm: when the ratio of one channel exceeds the other channels by a significant factor, it will adjust that channel down. 
 

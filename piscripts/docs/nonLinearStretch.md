@@ -4,7 +4,7 @@
 
 ![Non-Linear Stretch Dialog](./images/nonlinearstretchdialog.png)
 
-[nonLinearStretch.js](./nonLinearStretch.js)
+[nonLinearStretch.js](../nonLinearStretch.js)
 
 This script is designed to increase the contrast. It generations a luminance mask, then applies curves transformations to boost the foreground and diminish the background. Set relative weights of the transformations and specify number of iterations. Works best on non-linear (stretched) images.
 
