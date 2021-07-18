@@ -12,6 +12,8 @@ Common routines used across various scripts.
  * mailTo:deepskyworkflows@gmail.com
  */
 
+#define VERSION "0.2"
+
 #include <pjsr/DataType.jsh>
 #include <pjsr/StdButton.jsh>
 #include <pjsr/FrameStyle.jsh>
@@ -47,6 +49,11 @@ function writeLines() {
       }
    }
    console.flush();
+}
+
+function showDialog(title, msg) {
+    let mbox = new MessageBox(msg, title, StdIcon_Error, StdButton_Ok);
+    mbox.execute();
 }
 
 // get a unique name that doesn't conflict with existing
@@ -163,10 +170,11 @@ function createBoundNumericControl(parent, setting, config, sliderRange) {
 		label.text = config.funcs[setting].label;
       let range = config.funcs[setting].range;
 		label.minWidth = 130;
-      setRange(range.low, range.high);
-      if (config.funcs[setting].precision) {
-		   setPrecision(config.funcs[setting].precision);
+      if (config.funcs[setting].tooltip) {
+         toolTip = config.funcs[setting].tooltip;
       }
+      setRange(range.low, range.high);
+      setPrecision(config.funcs[setting].precision);
       slider.setRange(sliderRanges.low, sliderRanges.high);
 		slider.scaledMinWidth = 60;
 		edit.scaledMinWidth = 60;
@@ -560,7 +568,7 @@ function applyHistogramTransformation(view) {
 	view.endProcess();
 }
 
-function pixMathClone(view) {
+function pixMathClone(view, suffix) {
    var P = new PixelMath;
    P.expression = "$T";
    P.expression1 = "";
@@ -582,7 +590,7 @@ function pixMathClone(view) {
    P.truncateUpper = 1;
    P.createNewImage = true;
    P.showNewImage = true;
-   P.newImageId = getNewName(view.id, '_clone');
+   P.newImageId = getNewName(view.id, suffix || '_clone');
    P.newImageWidth = 0;
    P.newImageHeight = 0;
    P.newImageAlpha = false;

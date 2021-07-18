@@ -11,7 +11,7 @@ then use LRGB to combine them.
  *
  * Copyright Jeremy Likness, 2021
  *
- * Based on source by Ivan Smith and EZProcessingScripts
+ * Based on source by Ivan Smith and EZ Processing Scripts
  *
  * License: https://github.com/JeremyLikness/DeepSkyWorkflows/LICENSE
  *
@@ -23,7 +23,6 @@ then use LRGB to combine them.
 #feature-id    DeepSkyWorkflows > AutoLinearFit
 
 #define TITLE "Auto Linear Fit"
-#define VERSION "0.1"
 
 #include "deepSkyCommon.js"
 
@@ -153,6 +152,12 @@ function lrgbCombine(executionState) {
       // reapply to the view
       lrgb.executeOn(executionState.view);
    }
+
+   if (executionState.config.prefs.preserveChannels === false) {
+      executionState.channelImgs[0].window.forceClose();
+      executionState.channelImgs[1].window.forceClose();
+      executionState.channelImgs[2].window.forceClose();
+   }
 }
 
 // main method
@@ -230,8 +235,26 @@ function alfDialog(executionState)
    // new instance
    this.newInstanceCheckbox = new createBoundCheckbox(this, 'newInstance', executionState.config);
 
-   this.mainSettings = createGroupBox(this, 'Main settings', dlg.useMinCheckbox,
-      null, dlg.newInstanceCheckbox);
+   this.firstRow = new HorizontalSizer;
+   with (this.firstRow) {
+      margin = 6;
+      spacing = 4;
+      add(dlg.useMinCheckbox);
+      addStretch();
+      add(dlg.newInstanceCheckbox);
+   }
+
+   this.preserveChannelsCheckbox = new createBoundCheckbox(this, 'preserveChannels', executionState.config);
+
+   this.secondRow = new HorizontalSizer;
+   with (this.secondRow) {
+      margin = 6;
+      spacing = 4;
+      add(dlg.preserveChannelsCheckbox);
+   }
+
+   this.mainSettings = createVerticalGroupBox(this, 'Main settings', dlg.firstRow,
+      dlg.secondRow);
 
    // linear fit settings
    this.rejectLowSlider = createBoundNumericControl(this, 'rejectLow', executionState.config,
@@ -437,10 +460,18 @@ function main() {
 		      label: "Create new instance"
          },
          {
+            setting: "preserveChannels",
+            dataType: DataType_Boolean,
+            defaultValue: true,
+            tooltip: "Set this flag to keep the individual R, G, and B channels when done.",
+		      label: "Preserve individual channels"
+         },
+         {
             setting: "lightness",
             label: "Lightness:",
             range: { low: 0.001, high: 1.0 },
             dataType: DataType_Double,
+            tooltip: "Set to values below 0.5 to make the combined image lighter. Greater than 0.5 will make it darker.",
             precision: 3,
             defaultValue: 0.5
 		   },
@@ -449,8 +480,9 @@ function main() {
             label: "Saturation:",
             range: { low: 0.001, high: 1.0 },
             dataType: DataType_Double,
+            tooltip: "Set to values below 0.5 to increese the saturation and above 0.5 to decrease it.",
             precision: 3,
-            defaultValue: 1.0
+            defaultValue: 0.5
          },
          { setting: "noiseReduction", dataType: DataType_Boolean, defaultValue: false},
          { setting: "layersRemoved", dataType: DataType_Int16, defaultValue: 4},

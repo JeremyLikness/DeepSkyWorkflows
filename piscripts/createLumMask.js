@@ -20,7 +20,6 @@ This script will extract luminance and stretch it for a mask.
 #feature-id    DeepSkyWorkflows > CreateLumMask
 
 #define TITLE "Luminance Mask"
-#define VERSION "0.1"
 
 #include "deepSkyCommon.js"
 

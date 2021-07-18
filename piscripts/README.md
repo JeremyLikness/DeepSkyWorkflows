@@ -9,6 +9,7 @@ These are the active scripts. I have available to date.
 - [Auto-Linear Fit](./docs/autoLinearFit.md) is a script for normalizing RGB channels.
 - [Create Lum Mask](./docs/createLumMask.md) is a quick way to generate a luminance mask from a non-linear image.
 - [Non-Linear Stretch](./docs/nonLinearStretch.md) can help boost the brightness of your targets while diminishing the background.
+- [Generate Decon Support](./docs/generateDeconSupport.md) creates the masks I use for deconvolution.
 
 ## Installation
 

@@ -16,7 +16,6 @@ This script will apply a Hubble-style palette to your image.
 #feature-id    DeepSkyWorkflows > ApplyHubbleToRGB
 
 #define TITLE "Apply Hubble to RGB"
-#define VERSION "0.1"
 
 #include "deepSkyCommon.js"
 
