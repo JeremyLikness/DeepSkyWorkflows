@@ -4,6 +4,10 @@
 
 Initial releases.
 
+### v0.4
+
+- Implemented Hubble palette script.
+
 ### v0.3
 
 - Added "Fix RGB Pixels" script.
